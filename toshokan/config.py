@@ -1,7 +1,7 @@
 import json
 import os
 
-config_path = os.path.join(os.path.join(os.path.expanduser('~')), '.toshokan.json')
+config_path = os.path.join(os.path.expanduser('~'), '.toshokan.json')
 
 base_options = {
     "GameFAQs": {
