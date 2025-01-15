@@ -143,5 +143,51 @@ def get_full_game_info(id):
             game_info['Aliases'].append({'Name': a['AlternateName'], 'Region': a['Region']})
         game_info['Images'] = []
         for i in images:
-            game_info['Images'].append({'FileName': 'https://images.launchbox-app.com/' + i['FileName'], 'Type': i['Type'], 'Region': i['Region']})
+            game_info['Images'].append({'URL': 'https://images.launchbox-app.com/' + i['FileName'], 'Type': i['Type'], 'Region': i['Region']})
     return game_info
+
+
+def get_suggested_data(lbdata):
+    suggestions = []
+    for g in [x.strip() for x in lbdata['Genres'].split(';')]:
+        suggestions.append({'Type': 'Genre', 'Value': g, 'Confidence': 90})
+    if len(lbdata['Developer']) > 0:
+        suggestions.append({'Type': 'Developer', 'Value': lbdata['Developer'], 'Confidence': 90})
+    if len(lbdata['Publisher']) > 0:
+        suggestions.append({'Type': 'Publisher', 'Value': lbdata['Publisher'], 'Confidence': 90})
+    suggestions.append({'Type': 'Platform', 'Value': lbdata['Platform'], 'Confidence': 100})
+    suggestions.append({'Type': 'Year', 'Value': lbdata['ReleaseYear'], 'Confidence': 90})
+    if len(lbdata['Overview']) > 0:
+        suggestions.append({'Type': 'Description', 'Value': lbdata['Overview'], 'Confidence': 90})
+    if len(lbdata['VideoURL']) > 0:
+        suggestions.append({'Type': 'Video', 'Value': lbdata['VideoURL'], 'Confidence': 90})
+    for a in lbdata['Aliases']:
+        suggestions.append({'Type': 'Alias', 'Value': a['Name'].strip(), 'Confidence': 70})
+    for i in lbdata['Images']:
+        if i['Type'] == 'Box - Front':
+            suggestions.append({'Type': 'Cover', 'Value': i['URL'], 'Confidence': 90})
+        # Reconstructed boxart is normally fine but should be scrutinized for AI
+        if i['Type'] == 'Box - Front - Reconstructed':
+            suggestions.append({'Type': 'Cover', 'Value': i['URL'], 'Confidence': 80})
+        # Fliers and posters should normally not be used, but are good for things like Arcade
+        if i['Type'] == 'Advertisement Flyer - Front':
+            suggestions.append({'Type': 'Cover', 'Value': i['URL'], 'Confidence': 60})
+        if i['Type'] == 'Advertisement Flyer - Back':
+            suggestions.append({'Type': 'Cover', 'Value': i['URL'], 'Confidence': 50})
+        if i['Type'] == 'Poster':
+            suggestions.append({'Type': 'Cover', 'Value': i['URL'], 'Confidence': 50})
+        # Fan art is a last resort but is good for fan games and hacks
+        if i['Type'] == 'Fanart - Box - Front':
+            suggestions.append({'Type': 'Cover', 'Value': i['URL'], 'Confidence': 25})
+        # Title screens get a slight boost in confidence to encourage them being first
+        if i['Type'] == 'Screenshot - Game Title':
+            suggestions.append({'Type': 'Screenshot', 'Value': i['URL'], 'Confidence': 81})
+        if i['Type'] == 'Screenshot - Gameplay':
+            suggestions.append({'Type': 'Screenshot', 'Value': i['URL'], 'Confidence': 80})
+        # Banners have potential as backgrounds
+        if i['Type'] == 'Banner':
+            suggestions.append({'Type': 'Background', 'Value': i['URL'], 'Confidence': 50})
+        # Deprioritize fan art backgrounds, but keep it in case there's nothing else
+        if i['Type'] == 'Fanart - Background':
+            suggestions.append({'Type': 'Background', 'Value': i['URL'], 'Confidence': 25})
+    return suggestions
