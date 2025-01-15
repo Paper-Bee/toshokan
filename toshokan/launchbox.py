@@ -4,6 +4,7 @@ import os
 import sqlite3
 from thefuzz import fuzz, process
 
+
 def get_sqlite_path():
     user_config = config.get_config()
     return os.path.join(user_config['Toshokan']['storage_path'], 'launchbox.sqlite')
@@ -105,9 +106,24 @@ def find_game_by_name(name):
     for r in results:
         g = {}
         g['Name'], g['DatabaseID'] = r[0].split('||', 1)
-        g['Score'] = r[1]
+        g['SearchScore'] = r[1]
         if g['DatabaseID'] not in used_gids:
             final_results.append(g)
             used_gids.append(g['DatabaseID'])
-    final_results = sorted(final_results, key=lambda x: x['Score'], reverse=True)
-    return final_results[:10]
+    final_results = sorted(final_results, key=lambda x: x['SearchScore'], reverse=True)
+    return expand_search_results(final_results[:10])
+
+
+def expand_search_results(results):
+    expanded_results = []
+    sqlite_path = get_sqlite_path()
+    with sqlite3.connect(sqlite_path) as con:
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+        for r in results:
+            info = cur.execute("SELECT ReleaseYear, Platform FROM Game WHERE DatabaseID = ?", (r['DatabaseID'], )).fetchone()
+            expanded = {}
+            expanded['Row'] = '%s (%s) [%s]' % (r['Name'], info['ReleaseYear'], info['Platform'])
+            expanded['DatabaseID'] = r['DatabaseID']
+            expanded_results.append(expanded)
+    return expanded_results
