@@ -124,7 +124,7 @@ def expand_search_results(results):
             info = cur.execute("SELECT ReleaseYear, Platform FROM Game WHERE DatabaseID = ?", (r['DatabaseID'], )).fetchone()
             expanded = {}
             expanded['Row'] = '%s (%s) [%s]' % (r['Name'], info['ReleaseYear'], info['Platform'])
-            expanded['DatabaseID'] = r['DatabaseID']
+            expanded['ID'] = r['DatabaseID']
             expanded_results.append(expanded)
     return expanded_results
 

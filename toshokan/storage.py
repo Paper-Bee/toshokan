@@ -14,8 +14,18 @@ def store_json(data):
         os.mkdir(data_dir)
     # Write the data to a json file
     datafile_path = os.path.join(data_dir, '%s.json' % data['ID'])
-    with open(datafile_path, 'w') as out_file:
+    with open(datafile_path, 'w', encoding='utf-8') as out_file:
         out_file.write(json.dumps(data, indent=4, sort_keys=True))
+
+
+def load_json(id):
+    user_config = config.get_config()
+    data_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Data')
+    # Load the data from a json file
+    datafile_path = os.path.join(data_dir, '%s.json' % id)
+    with open(datafile_path, 'r', encoding='utf-8') as in_file:
+        data = json.load(in_file)
+    return data
 
 
 def download_image(url):

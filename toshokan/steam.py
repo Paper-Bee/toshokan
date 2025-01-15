@@ -21,9 +21,10 @@ def search_for_game(name):
     for game in result_soup:
         if '/app/' in game['href']:
             g = {}
-            g['Name'] = game.find('div', 'search_name').find('span', 'title').text.strip()
-            g['Release Date'] = game.find('div', 'search_released').text.strip()
-            g['Appid'] = game['data-ds-appid']
+            name = game.find('div', 'search_name').find('span', 'title').text.strip()
+            release_date = game.find('div', 'search_released').text.strip()
+            g['Row'] = '%s (%s)' % (name, release_date)
+            g['ID'] = game['data-ds-appid']
             search_results.append(g)
     return search_results[:10]
 
