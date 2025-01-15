@@ -46,3 +46,17 @@ def store_cover(id, temp_file):
         os.mkdir(cover_dir)
     cover_img_path = os.path.join(cover_dir, '%s.jpg' % id)
     os.rename(temp_file, cover_img_path)
+
+
+def store_screenshot(id, temp_file, number):
+    user_config = config.get_config()
+    ss_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Screenshots')
+    # Make the screenshots directory if it does not exist
+    if not os.path.exists(ss_dir):
+        os.mkdir(ss_dir)
+    # Expand into a game-specific folder
+    game_ss_dir = os.path.join(ss_dir, id)
+    if not os.path.exists(game_ss_dir):
+        os.mkdir(game_ss_dir)
+    ss_img_path = os.path.join(game_ss_dir, '%s.jpg' % number)
+    os.rename(temp_file, ss_img_path)
