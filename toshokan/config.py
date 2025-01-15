@@ -40,8 +40,13 @@ base_options = {
         "enabled": False,
     },
     "Toshokan": {
+        # The maximum number of screenshots to store when building an entry
+        "screenshots": 4,
         # The directory that Toshokan should store harvested data in.
         "storage_path": "",
+        # Whether or not you want to store a legacy ID for converting old entries.
+        # If you don't already have a database from another program, you don't need this.
+        "use_legacy_id": False,
     }
 }
 
