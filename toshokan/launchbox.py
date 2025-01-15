@@ -127,3 +127,21 @@ def expand_search_results(results):
             expanded['DatabaseID'] = r['DatabaseID']
             expanded_results.append(expanded)
     return expanded_results
+
+
+# Given a DatabaseID, return everything from LaunchBox
+def get_full_game_info(id):
+    sqlite_path = get_sqlite_path()
+    with sqlite3.connect(sqlite_path) as con:
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+        game_info = dict(cur.execute("SELECT * FROM Game WHERE DatabaseID = ?", (id, )).fetchone())
+        aliases = cur.execute("SELECT * FROM GameAlternateName WHERE DatabaseID = ?", (id, )).fetchall()
+        images = cur.execute("SELECT * FROM GameImage WHERE DatabaseID = ?", (id, )).fetchall()
+        game_info['Aliases'] = []
+        for a in aliases:
+            game_info['Aliases'].append({'Name': a['AlternateName'], 'Region': a['Region']})
+        game_info['Images'] = []
+        for i in images:
+            game_info['Images'].append({'FileName': 'https://images.launchbox-app.com/' + i['FileName'], 'Type': i['Type'], 'Region': i['Region']})
+    return game_info

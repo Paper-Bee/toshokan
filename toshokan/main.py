@@ -8,3 +8,5 @@ launchbox.xml_to_sqlite()
 test = launchbox.find_game_by_name("Pokemon FireRed")
 for t in test:
     print(t)
+
+print(launchbox.get_full_game_info(test[0]['DatabaseID']))
