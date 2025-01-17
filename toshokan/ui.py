@@ -5,6 +5,7 @@ import howlongtobeat
 import igdb
 import launchbox
 import pcgamingwiki
+import retroachievements
 import steam
 import storage
 
@@ -83,17 +84,6 @@ def add_new_game():
             g['External Links']['Steam']['ID'] = steam_appid
             g['External Suggestions']['Steam'] = steam_suggestions
 
-    # Handle LaunchBox
-    if user_config['LaunchBox']['enabled']:
-        print("Searching on LaunchBox...")
-        launchbox_search_results = launchbox.search_for_game(user_input)
-        chosen = select_from_list(launchbox_search_results)
-        if chosen is not None:
-            launchbox_data = launchbox.get_full_game_info(chosen['ID'])
-            launchbox_suggestions = launchbox.get_suggested_data(launchbox_data)
-            g['External Links']['LaunchBox']['ID'] = chosen['ID']
-            g['External Suggestions']['LaunchBox'] = launchbox_suggestions
-
     # Handle PCGamingWiki
     if user_config['PCGamingWiki']['enabled']:
         pcgw_data = None
@@ -114,6 +104,29 @@ def add_new_game():
             pcgamingwiki_suggestions = pcgamingwiki.get_suggested_data(pcgw_data['Data'])
             g['External Suggestions']['PCGamingWiki'] = pcgamingwiki_suggestions
 
+    # Handle IGDB
+    if user_config['IGDB']['enabled']:
+        # TODO: Use ID from PCGamingWiki if valid
+        print("Searching on IGDB...")
+        igdb_search_results = igdb.search_for_game(user_input)
+        chosen = select_from_list(igdb_search_results)
+        if chosen is not None:
+            igdb_data = igdb.get_full_game_info(chosen['ID'])
+            igdb_suggestions = igdb.get_suggested_data(igdb_data)
+            g['External Links']['IGDB']['ID'] = chosen['ID']
+            g['External Suggestions']['IGDB'] = igdb_suggestions
+
+    # Handle LaunchBox
+    if user_config['LaunchBox']['enabled']:
+        print("Searching on LaunchBox...")
+        launchbox_search_results = launchbox.search_for_game(user_input)
+        chosen = select_from_list(launchbox_search_results)
+        if chosen is not None:
+            launchbox_data = launchbox.get_full_game_info(chosen['ID'])
+            launchbox_suggestions = launchbox.get_suggested_data(launchbox_data)
+            g['External Links']['LaunchBox']['ID'] = chosen['ID']
+            g['External Suggestions']['LaunchBox'] = launchbox_suggestions
+
     # Handle GameFAQs
     if user_config['GameFAQs']['enabled']:
         print("Searching on GameFAQs...")
@@ -131,16 +144,15 @@ def add_new_game():
         if chosen is not None:
             g['External Links']['HowLongToBeat']['ID'] = chosen['ID']
 
-    # Handle IGDB
-    if user_config['IGDB']['enabled']:
-        # TODO: Use ID from PCGamingWiki if valid
-        print("Searching on IGDB...")
-        igdb_search_results = igdb.search_for_game(user_input)
-        chosen = select_from_list(igdb_search_results)
+    # Handle RetroAchievements
+    if user_config['RetroAchievements']['enabled']:
+        print("Searching on RetroAchievements...")
+        retroachievements_search_results = retroachievements.search_for_game(user_input)
+        chosen = select_from_list(retroachievements_search_results)
         if chosen is not None:
-            igdb_data = igdb.get_full_game_info(chosen['ID'])
-            igdb_suggestions = igdb.get_suggested_data(igdb_data)
-            g['External Links']['IGDB']['ID'] = chosen['ID']
-            g['External Suggestions']['IGDB'] = igdb_suggestions
+            retroachievements_data = retroachievements.get_game_info(chosen['ID'])
+            retroachievements_suggestions = retroachievements.get_suggested_data(retroachievements_data)
+            g['External Links']['RetroAchievements']['ID'] = chosen['ID']
+            g['External Suggestions']['RetroAchievements'] = retroachievements_suggestions
 
     storage.store_json(g)

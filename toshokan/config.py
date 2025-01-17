@@ -35,12 +35,10 @@ def get_base_options():
             "enabled": False,
         },
         "RetroAchievements": {
+            "api_key": "",
             "enabled": False,
         },
         "Steam": {
-            "enabled": False,
-        },
-        "SteamGridDB": {
             "enabled": False,
         },
         "Toshokan": {
