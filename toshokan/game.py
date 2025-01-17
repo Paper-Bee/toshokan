@@ -33,7 +33,6 @@ def _add_missing_fields(game_data):
         if data_source not in game_data['External Links'].keys():
             game_data['External Links'][data_source] = {}
     # Add some misc. data
-    print(game_data)
     game_data['External Links']['Steam']['Is Delisted'] = False
     return game_data
 
