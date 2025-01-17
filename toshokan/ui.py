@@ -1,5 +1,6 @@
 import config
 import game
+import gamefaqs
 import launchbox
 import pcgamingwiki
 import steam
@@ -106,5 +107,13 @@ def add_new_game():
         if pcgw_data is not None:
             pcgamingwiki_suggestions = pcgamingwiki.get_suggested_data(pcgw_data['Data'])
             g['External Suggestions']['PCGamingWiki'] = pcgamingwiki_suggestions
+
+    # Handle GameFAQs
+    if user_config['GameFAQs']['enabled']:
+        print("Searching on GameFAQs...")
+        gamefaqs_search_results = gamefaqs.search_for_game(user_input)
+        chosen = select_from_list(gamefaqs_search_results)
+        if chosen is not None:
+            g['External Links']['GameFAQs']['URL'] = chosen['URL']
 
     storage.store_json(g)
