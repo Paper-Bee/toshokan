@@ -31,17 +31,15 @@ def _add_missing_fields(game_data):
     # Add external data fields if missing and enabled
     for data_source in user_config.keys():
         if data_source not in game_data['External Links'].keys():
-            game_data['External Links'][data_source] = None
+            game_data['External Links'][data_source] = {}
     # Add some misc. data
+    print(game_data)
     game_data['External Links']['Steam']['Is Delisted'] = False
     return game_data
 
 
 def new_game():
-    base_options = config.get_base_options()
     template = {}
-    for data_source in base_options.keys():
-        template[data_source] == {}
     template = _add_missing_fields(template)
     return template
 

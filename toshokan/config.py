@@ -39,6 +39,10 @@ def get_base_options():
             "enabled": False,
         },
         "Toshokan": {
+            # If use_external_id is true and you don't input one when prompted,
+            # it will instead use this value + 1. Automatically updated when you
+            # input an external ID.
+            "highest_seen_external_id": 0,
             # The maximum number of screenshots to store when building an entry
             "screenshots": 4,
             # The directory that Toshokan should store harvested data in.

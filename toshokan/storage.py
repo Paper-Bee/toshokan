@@ -6,16 +6,28 @@ import requests
 import uuid
 
 
-def store_json(data):
+def get_new_json_id():
+    user_config = config.get_config()
+    # Make the data directory if it does not exist
+    data_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Data')
+    data_files = os.listdir(data_dir)
+    # Short-circuit if no files are present, as you can't get the max of an empty list
+    if len(data_files) == 0:
+        return 1
+    max_id = max([int(f.split('.')[0]) for f in data_files])
+    return max_id + 1
+
+
+def store_json(game_data):
     user_config = config.get_config()
     # Make the data directory if it does not exist
     data_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Data')
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
     # Write the data to a json file
-    datafile_path = os.path.join(data_dir, '%s.json' % data['ID'])
+    datafile_path = os.path.join(data_dir, '%s.json' % game_data['ID'])
     with open(datafile_path, 'w', encoding='utf-8') as out_file:
-        out_file.write(json.dumps(data, indent=4, sort_keys=True))
+        out_file.write(json.dumps(game_data, indent=4, sort_keys=True))
 
 
 def load_json(id):
@@ -24,8 +36,8 @@ def load_json(id):
     # Load the data from a json file
     datafile_path = os.path.join(data_dir, '%s.json' % id)
     with open(datafile_path, 'r', encoding='utf-8') as in_file:
-        data = json.load(in_file)
-    return data
+        game_data = json.load(in_file)
+    return game_data
 
 
 def download_image(url):

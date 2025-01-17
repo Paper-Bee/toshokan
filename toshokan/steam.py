@@ -26,7 +26,7 @@ def search_for_game(name):
             g['Row'] = '%s (%s)' % (name, release_date)
             g['ID'] = game['data-ds-appid']
             search_results.append(g)
-    return search_results[:10]
+    return search_results[:21]
 
 
 def is_steamid_valid(steamid):
@@ -38,6 +38,12 @@ def is_steamid_valid(steamid):
 
 def get_suggested_data(steamdata):
     suggestions = []
+    if 'name' in steamdata.keys():
+        suggestions.append({'Type': 'Name', 'Value': steamdata['name'], 'Confidence': 95})
+    if 'short_description' in steamdata.keys():
+        suggestions.append({'Type': 'description', 'Value': steamdata['short_description'], 'Confidence': 95})
+    if 'website' in steamdata.keys():
+        suggestions.append({'Type': 'Homepage', 'Value': steamdata['website'], 'Confidence': 100})
     if steamdata['is_free']:
         suggestions.append({'Type': 'Meta', 'Value': 'Freely Available', 'Confidence': 100})
     if steamdata['platforms']['windows']:
@@ -46,6 +52,10 @@ def get_suggested_data(steamdata):
         suggestions.append({'Type': 'Platform', 'Value': 'Mac', 'Confidence': 100})
     if steamdata['platforms']['linux']:
         suggestions.append({'Type': 'Platform', 'Value': 'Linux', 'Confidence': 100})
+    for d in steamdata['developers']:
+        suggestions.append({'Type': 'Developer', 'Value': d, 'Confidence': 100})
+    for p in steamdata['publishers']:
+        suggestions.append({'Type': 'Publisher', 'Value': p, 'Confidence': 100})
     for c in steamdata['categories']:
         suggestions.append({'Type': 'Meta', 'Value': c['description'], 'Confidence': 100})
     for g in steamdata['genres']:

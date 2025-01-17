@@ -97,7 +97,7 @@ def get_gamename_array():
     return list(set(results))
 
 
-def find_game_by_name(name):
+def search_for_game(name):
     games = get_gamename_array()
     results = process.extract(name, games, scorer=fuzz.ratio, limit=10)
     results += process.extract(name, games, scorer=fuzz.partial_ratio, limit=10)
@@ -111,7 +111,7 @@ def find_game_by_name(name):
             final_results.append(g)
             used_gids.append(g['DatabaseID'])
     final_results = sorted(final_results, key=lambda x: x['SearchScore'], reverse=True)
-    return expand_search_results(final_results[:10])
+    return expand_search_results(final_results[:21])
 
 
 def expand_search_results(results):
@@ -156,7 +156,13 @@ def get_suggested_data(lbdata):
     if len(lbdata['Publisher']) > 0:
         suggestions.append({'Type': 'Publisher', 'Value': lbdata['Publisher'], 'Confidence': 90})
     suggestions.append({'Type': 'Platform', 'Value': lbdata['Platform'], 'Confidence': 100})
-    suggestions.append({'Type': 'Year', 'Value': lbdata['ReleaseYear'], 'Confidence': 90})
+    if lbdata['ReleaseYear'] is not None:
+        suggestions.append({'Type': 'Year', 'Value': lbdata['ReleaseYear'], 'Confidence': 90})
+    if lbdata['MaxPlayers'] is not None:
+        if int(lbdata['MaxPlayers']) > 1:
+            suggestions.append({'Type': 'Meta', 'Value': 'Multiplayer', 'Confidence': 70})
+            if lbdata['Cooperative']:
+                suggestions.append({'Type': 'Meta', 'Value': 'Co-op', 'Confidence': 70})
     if len(lbdata['Overview']) > 0:
         suggestions.append({'Type': 'Description', 'Value': lbdata['Overview'], 'Confidence': 90})
     if len(lbdata['VideoURL']) > 0:
