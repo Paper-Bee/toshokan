@@ -2,6 +2,7 @@ import config
 import game
 import gamefaqs
 import howlongtobeat
+import igdb
 import launchbox
 import pcgamingwiki
 import steam
@@ -123,10 +124,23 @@ def add_new_game():
 
     # Handle HowLongToBeat
     if user_config['HowLongToBeat']['enabled']:
+        # TODO: Use ID from PCGamingWiki if valid
         print("Searching on HowLongToBeat...")
         hltb_search_results = howlongtobeat.search_for_game(user_input)
         chosen = select_from_list(hltb_search_results)
         if chosen is not None:
             g['External Links']['HowLongToBeat']['ID'] = chosen['ID']
+
+    # Handle IGDB
+    if user_config['IGDB']['enabled']:
+        # TODO: Use ID from PCGamingWiki if valid
+        print("Searching on IGDB...")
+        igdb_search_results = igdb.search_for_game(user_input)
+        chosen = select_from_list(igdb_search_results)
+        if chosen is not None:
+            igdb_data = igdb.get_full_game_info(chosen['ID'])
+            igdb_suggestions = igdb.get_suggested_data(igdb_data)
+            g['External Links']['IGDB']['ID'] = chosen['ID']
+            g['External Suggestions']['IGDB'] = igdb_suggestions
 
     storage.store_json(g)

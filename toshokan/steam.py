@@ -41,7 +41,7 @@ def get_suggested_data(steamdata):
     if 'name' in steamdata.keys():
         suggestions.append({'Type': 'Name', 'Value': steamdata['name'], 'Confidence': 95})
     if 'short_description' in steamdata.keys():
-        suggestions.append({'Type': 'description', 'Value': steamdata['short_description'], 'Confidence': 95})
+        suggestions.append({'Type': 'Description', 'Value': steamdata['short_description'], 'Confidence': 95})
     if 'website' in steamdata.keys():
         suggestions.append({'Type': 'Homepage', 'Value': steamdata['website'], 'Confidence': 100})
     if 'background_raw' in steamdata.keys():

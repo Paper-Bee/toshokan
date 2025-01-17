@@ -14,6 +14,11 @@ def get_base_options():
             "enabled": False,
         },
         "IGDB": {
+            # Access token is automatically obtained/updated
+            "access_token": '',
+            # Client ID and Secret are obtained from Twitch
+            "client_id": '',
+            "client_secret": '',
             "enabled": False,
         },
         "LaunchBox": {
