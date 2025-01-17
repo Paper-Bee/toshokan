@@ -1,6 +1,7 @@
 import config
 import game
 import gamefaqs
+import howlongtobeat
 import launchbox
 import pcgamingwiki
 import steam
@@ -29,6 +30,10 @@ def prompt_for_external_id():
     if external_id > user_config['Toshokan']['highest_seen_external_id']:
         config.set_option(user_config, 'Toshokan', 'highest_seen_external_id', external_id)
     return external_id
+
+
+def choose_background(options):
+    pass
 
 
 def choose_cover(options):
@@ -115,5 +120,13 @@ def add_new_game():
         chosen = select_from_list(gamefaqs_search_results)
         if chosen is not None:
             g['External Links']['GameFAQs']['URL'] = chosen['URL']
+
+    # Handle HowLongToBeat
+    if user_config['HowLongToBeat']['enabled']:
+        print("Searching on HowLongToBeat...")
+        hltb_search_results = howlongtobeat.search_for_game(user_input)
+        chosen = select_from_list(hltb_search_results)
+        if chosen is not None:
+            g['External Links']['HowLongToBeat']['ID'] = chosen['ID']
 
     storage.store_json(g)

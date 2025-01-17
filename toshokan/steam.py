@@ -44,6 +44,8 @@ def get_suggested_data(steamdata):
         suggestions.append({'Type': 'description', 'Value': steamdata['short_description'], 'Confidence': 95})
     if 'website' in steamdata.keys():
         suggestions.append({'Type': 'Homepage', 'Value': steamdata['website'], 'Confidence': 100})
+    if 'background_raw' in steamdata.keys():
+        suggestions.append({'Type': 'Background', 'Value': steamdata['background_raw'].split('?')[0], 'Confidence': 90})
     if steamdata['is_free']:
         suggestions.append({'Type': 'Meta', 'Value': 'Freely Available', 'Confidence': 100})
     if steamdata['platforms']['windows']:
