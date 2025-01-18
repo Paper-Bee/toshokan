@@ -4,6 +4,7 @@ import gamefaqs
 import howlongtobeat
 import igdb
 import launchbox
+import mobygames
 import pcgamingwiki
 import retroachievements
 import steam
@@ -154,5 +155,16 @@ def add_new_game():
             retroachievements_suggestions = retroachievements.get_suggested_data(retroachievements_data)
             g['External Links']['RetroAchievements']['ID'] = chosen['ID']
             g['External Suggestions']['RetroAchievements'] = retroachievements_suggestions
+
+    # Handle MobyGames
+    if user_config['MobyGames']['enabled']:
+        print("Searching on MobyGames...")
+        mobygames_search_results = mobygames.search_for_game(user_input)
+        chosen = select_from_list(mobygames_search_results)
+        if chosen is not None:
+            mobygames_data = mobygames.get_game_info(chosen['ID'])
+            mobygames_suggestions = mobygames.get_suggested_data(mobygames_data)
+            g['External Links']['MobyGames']['ID'] = chosen['ID']
+            g['External Suggestions']['MobyGames'] = mobygames_suggestions
 
     storage.store_json(g)

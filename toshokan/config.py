@@ -29,6 +29,7 @@ def get_base_options():
             "path_to_metadata_xml": str(os.path.join(os.path.join(os.path.expanduser('~')), 'LaunchBox/Metadata/Metadata.xml')),
         },
         "MobyGames": {
+            "api_key": "",
             "enabled": False,
         },
         "PCGamingWiki": {
