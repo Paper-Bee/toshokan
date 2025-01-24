@@ -151,9 +151,9 @@ def get_suggested_data(lbdata):
     suggestions = []
     for g in [x.strip() for x in lbdata['Genres'].split(';')]:
         suggestions.append({'Type': 'Genre', 'Value': g, 'Confidence': 90})
-    if len(lbdata['Developer']) > 0:
+    if lbdata['Developer'] is not None and len(lbdata['Developer']) > 0:
         suggestions.append({'Type': 'Developer', 'Value': lbdata['Developer'], 'Confidence': 90})
-    if len(lbdata['Publisher']) > 0:
+    if lbdata['Publisher'] is not None and len(lbdata['Publisher']) > 0:
         suggestions.append({'Type': 'Publisher', 'Value': lbdata['Publisher'], 'Confidence': 90})
     suggestions.append({'Type': 'Platform', 'Value': lbdata['Platform'], 'Confidence': 100})
     if lbdata['ReleaseYear'] is not None:
@@ -163,9 +163,9 @@ def get_suggested_data(lbdata):
             suggestions.append({'Type': 'Meta', 'Value': 'Multiplayer', 'Confidence': 70})
             if lbdata['Cooperative']:
                 suggestions.append({'Type': 'Meta', 'Value': 'Co-op', 'Confidence': 70})
-    if len(lbdata['Overview']) > 0:
+    if lbdata['Overview'] is not None and len(lbdata['Overview']) > 0:
         suggestions.append({'Type': 'Description', 'Value': lbdata['Overview'], 'Confidence': 90})
-    if len(lbdata['VideoURL']) > 0:
+    if lbdata['VideoURL'] is not None and len(lbdata['VideoURL']) > 0:
         suggestions.append({'Type': 'Video', 'Value': lbdata['VideoURL'], 'Confidence': 90})
     for a in lbdata['Aliases']:
         suggestions.append({'Type': 'Alias', 'Value': a['Name'].strip(), 'Confidence': 70})

@@ -6,7 +6,7 @@ import requests
 
 def get_game_info(game_id):
     user_config = config.get_config()
-    resp = requests.get('https://api.mobygames.com/v1/games', params = {'id': game_id, 'api_key': user_config['MobyGames']['api_key']})
+    resp = requests.get('https://api.mobygames.com/v1/games', params={'id': game_id, 'api_key': user_config['MobyGames']['api_key']})
     mobygames_details = json.loads(resp.text)['games'][0]
     return mobygames_details
 

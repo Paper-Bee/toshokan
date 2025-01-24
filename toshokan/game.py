@@ -30,7 +30,7 @@ def _add_missing_fields(game_data):
         game_data['External ID'] = None
     # Add external data fields if missing and enabled
     for data_source in user_config.keys():
-        if data_source not in game_data['External Links'].keys():
+        if data_source not in game_data['External Links'].keys() and data_source != 'Toshokan':
             game_data['External Links'][data_source] = {}
     # Add some misc. data
     game_data['External Links']['Steam']['Is Delisted'] = False

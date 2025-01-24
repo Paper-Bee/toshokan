@@ -136,7 +136,7 @@ def get_suggested_data(igdb_data):
     if 'websites' in igdb_data.keys():
         for w in igdb_data['websites']:
             if 'twitch.tv/directory/' in w['url']:
-                suggestions.append({'Type': 'Twitch ID', 'Value': w['url'].split('/')[0], 'Confidence': 95})
+                suggestions.append({'Type': 'Twitch ID', 'Value': w['url'].split('/')[-1], 'Confidence': 95})
             if 'gog.com/' in w['url']:
                 suggestions.append({'Type': 'GOG ID', 'Value': w['url'].split('/game/')[1].split('/')[0], 'Confidence': 95})
             if w['category'] == 1:

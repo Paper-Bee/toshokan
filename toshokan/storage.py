@@ -8,7 +8,6 @@ import uuid
 
 def get_new_json_id():
     user_config = config.get_config()
-    # Make the data directory if it does not exist
     data_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Data')
     data_files = os.listdir(data_dir)
     # Short-circuit if no files are present, as you can't get the max of an empty list
@@ -60,17 +59,27 @@ def download_image(url):
     return file_path
 
 
-def store_cover(id, temp_file):
+def store_background(id, file_path):
+    user_config = config.get_config()
+    bg_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Backgrounds')
+    # Make the backgrounds directory if it does not exist
+    if not os.path.exists(bg_dir):
+        os.mkdir(bg_dir)
+    bg_img_path = os.path.join(bg_dir, '%s.jpg' % id)
+    os.rename(file_path, bg_img_path)
+
+
+def store_cover(id, file_path):
     user_config = config.get_config()
     cover_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Covers')
     # Make the covers directory if it does not exist
     if not os.path.exists(cover_dir):
         os.mkdir(cover_dir)
     cover_img_path = os.path.join(cover_dir, '%s.jpg' % id)
-    os.rename(temp_file, cover_img_path)
+    os.rename(file_path, cover_img_path)
 
 
-def store_screenshot(id, temp_file, number):
+def store_screenshot(id, file_path, number):
     user_config = config.get_config()
     ss_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Screenshots')
     # Make the screenshots directory if it does not exist
@@ -81,4 +90,4 @@ def store_screenshot(id, temp_file, number):
     if not os.path.exists(game_ss_dir):
         os.mkdir(game_ss_dir)
     ss_img_path = os.path.join(game_ss_dir, '%s.jpg' % number)
-    os.rename(temp_file, ss_img_path)
+    os.rename(file_path, ss_img_path)
