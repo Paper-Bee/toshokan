@@ -17,6 +17,8 @@ import webbrowser
 def select_from_list(options):
     for i in range(0, len(options)):
         print('%s. %s' % (i, options[i]['Row']))
+        if 'Type' in options[i].keys() and options[i]['Type'] == 'Description':
+            print('------------------------------------------------------------------------------------------')
     print()
     user_input = input("Select an option (or multiple separated by space): ").strip().split(' ')
     for num in user_input:
@@ -29,6 +31,8 @@ def exclude_from_list(options):
     valid_numbers = list(range(0, len(options)))
     for i in valid_numbers:
         print('%s. %s' % (i, options[i]['Row']))
+        if 'Type' in options[i].keys() and options[i]['Type'] == 'Description':
+            print('------------------------------------------------------------------------------------------')
     print()
     user_input = input("Exclude an option (or multiple separated by space): ").strip().split(' ')
     for num in user_input:
@@ -105,16 +109,6 @@ def choose_images(category, url_objects):
                     s['URL'] = old_file_to_url[old_file_name]
             selected_files.append(s)
     return selected_files
-
-
-def choose_tags(options):
-    user_config = config.get_config()
-    pass
-
-
-def choose_platforms(options):
-    user_config = config.get_config()
-    pass
 
 
 def collect_data(g):
@@ -236,6 +230,12 @@ def collect_data(g):
 
     # Handle MobyGames
     if user_config['MobyGames']['enabled']:
+        # Use ID from PCGamingWiki if valid
+        if user_config['PCGamingWiki']['enabled'] and pcgw_data is not None:
+            for v in g['External Suggestions']['PCGamingWiki']:
+                if v['Type'] == 'MobyGames ID':
+                    print("Using MobyGames ID from PCGamingWiki...")
+                    g['External Links']['MobyGames']['ID'] = v['Value']
         try:
             print("Searching on MobyGames...")
             mobygames_search_results = mobygames.search_for_game(user_input)
@@ -255,25 +255,25 @@ def consolidate_type(game_data, attribute):
     candidates = []
     used_candidates = []
     for data_source in game_data['External Suggestions'].keys():
-        if data_source != 'LaunchBox':
+        if data_source not in ['LaunchBox', 'RetroAchievements']:
             for obj in game_data['External Suggestions'][data_source]:
                 if obj['Type'] == attribute:
-                    if obj['Value'] not in used_candidates:
-                        used_candidates.append(obj['Value'])
+                    if str(obj['Value']).lower() not in used_candidates:
+                        used_candidates.append(str(obj['Value']).lower())
                         candidates.append(obj)
                         candidates[-1]['Source'] = data_source
         else:
             for platform in game_data['External Suggestions'][data_source]:
                 for obj in game_data['External Suggestions'][data_source][platform]:
                     if obj['Type'] == attribute:
-                        if obj['Value'] not in used_candidates:
-                            used_candidates.append(obj['Value'])
+                        if str(obj['Value']).lower() not in used_candidates:
+                            used_candidates.append(str(obj['Value']).lower())
                             candidates.append(obj)
                             candidates[-1]['Source'] = data_source
     candidate_objects = []
     for candid in candidates:
         c = candid.copy()
-        c['Row'] = '%s [%s]' % (c['Value'], c['Source'])
+        c['Row'] = '%s [%s, %s]' % (c['Value'], c['Source'], c['Confidence'])
         candidate_objects.append(c)
     return candidate_objects
 
@@ -290,6 +290,117 @@ def refine_data(game_data):
     if len(chosen_bgs) == 1:
         game_data['Background URL'] = chosen_bgs[0]['URL']
         storage.store_background(game_data['ID'], chosen_bgs[0]['Path'])
+
+    print("Selecting cover...")
+    cover_candidate_objects = consolidate_type(game_data, 'Cover')
+    chosen_covers = choose_images('Cover', cover_candidate_objects)
+    if len(chosen_covers) == 1:
+        game_data['Cover URL'] = chosen_covers[0]['URL']
+        storage.store_cover(game_data['ID'], chosen_covers[0]['Path'])
+
+    print("Filtering descriptions...")
+    description_candidate_objects = consolidate_type(game_data, 'Description')
+    descriptions = select_from_list(description_candidate_objects)
+    if len(descriptions) == 1:
+        game_data['Description'] = descriptions[0]['Value']
+
+    print("Filtering developers...")
+    dev_candidate_objects = consolidate_type(game_data, 'Developer')
+    devs = exclude_from_list(dev_candidate_objects)
+    game_data['Developers'] = [x['Value'] for x in devs]
+
+    print("Filtering genres...")
+    genre_candidate_objects = consolidate_type(game_data, 'Genre')
+    genres = exclude_from_list(genre_candidate_objects)
+    game_data['Genres'] = [x['Value'] for x in genres]
+
+    print("Filtering meta attributes...")
+    meta_candidate_objects = consolidate_type(game_data, 'Meta')
+    metas = exclude_from_list(meta_candidate_objects)
+    game_data['Meta Attributes'] = [x['Value'] for x in metas]
+
+    print("Filtering names...")
+    name_candidate_objects = consolidate_type(game_data, 'Name')
+    if len(name_candidate_objects) == 1:
+        names = name_candidate_objects
+    else:
+        names = select_from_list(name_candidate_objects)
+    if len(names) == 1:
+        game_data['Name'] = names[0]['Value']
+
+    print("Filtering platforms...")
+    platform_objects = consolidate_type(game_data, 'Platform')
+    platforms = exclude_from_list(platform_objects)
+    game_data['Platforms'] = [x['Value'] for x in platforms]
+
+    print("Filtering publishers...")
+    pub_candidate_objects = consolidate_type(game_data, 'Publisher')
+    pubs = exclude_from_list(pub_candidate_objects)
+    game_data['Publishers'] = [x['Value'] for x in pubs]
+
+    print("Selecting screenshots...")
+    ss_candidate_objects = consolidate_type(game_data, 'Screenshot')
+    chosen_screenshots = choose_images('Screenshot', ss_candidate_objects)
+    for i in range(0, len(chosen_screenshots)):
+        game_data['Screenshot URLs'].append(chosen_screenshots[i]['URL'])
+        storage.store_screenshot(game_data['ID'], chosen_screenshots[i]['Path'], i)
+
+    print("Filtering series...")
+    series_candidate_objects = consolidate_type(game_data, 'Series')
+    if len(series_candidate_objects) > 0:
+        series = exclude_from_list(series_candidate_objects)
+        game_data['Series'] = [x['Value'] for x in series]
+
+    print("Filtering tags...")
+    tag_candidate_objects = consolidate_type(game_data, 'Tag')
+    tags = exclude_from_list(tag_candidate_objects)
+    game_data['Tags'] = [x['Value'] for x in tags]
+
+    print("Would you like to add any custom tags? If so, input them, separated by spaces, now:")
+    user_tags = input().split(' ')
+    if user_tags[0] != '':
+        game_data['Tags'] += user_tags
+
+    print("Filtering videos...")
+    video_candidate_objects = consolidate_type(game_data, 'Video')
+    if len(video_candidate_objects) == 1:
+        videos = video_candidate_objects
+    else:
+        videos = select_from_list(video_candidate_objects)
+    if len(videos) == 1:
+        if 'steamstatic' in videos[0]['Value']:
+            game_data['Video URL'] = videos[0]['Value'].split('?')[0]
+        else:
+            game_data['Video URL'] = videos[0]['Value']
+
+    print("Filtering years...")
+    year_candidate_objects = consolidate_type(game_data, 'Year')
+    if len(year_candidate_objects) == 1:
+        years = year_candidate_objects
+    else:
+        years = select_from_list(year_candidate_objects)
+    if len(years) == 1:
+        if str(years[0]['Value']).isnumeric():
+            game_data['Year'] = int(years[0]['Value'])
+
+    print("Checking for other external links...")
+    gog_candidate_objects = consolidate_type(game_data, 'GOG ID')
+    if len(gog_candidate_objects) >= 1:
+        game_data['External Links']['GOG'] = {}
+        game_data['External Links']['GOG']['ID'] = gog_candidate_objects[0]['Value']
+    twitch_candidate_objects = consolidate_type(game_data, 'Twitch ID')
+    if len(twitch_candidate_objects) >= 1:
+        game_data['External Links']['Twitch'] = {}
+        game_data['External Links']['Twitch']['ID'] = twitch_candidate_objects[0]['Value']
+    strategywiki_candidate_objects = consolidate_type(game_data, 'StrategyWiki ID')
+    if len(strategywiki_candidate_objects) >= 1:
+        game_data['External Links']['StrategyWiki'] = {}
+        game_data['External Links']['StrategyWiki']['ID'] = strategywiki_candidate_objects[0]['Value']
+    wikipedia_candidate_objects = consolidate_type(game_data, 'Wikipedia ID')
+    if len(wikipedia_candidate_objects) >= 1:
+        game_data['External Links']['Wikipedia'] = {}
+        game_data['External Links']['Wikipedia']['ID'] = wikipedia_candidate_objects[0]['Value']
+
     return game_data
 
 
@@ -300,3 +411,5 @@ def add_new_game():
     g = collect_data(g)
     g = refine_data(g)
     storage.store_json(g)
+    storage.clean_workzone()
+    storage.clean_temp()

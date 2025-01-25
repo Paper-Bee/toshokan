@@ -132,6 +132,8 @@ def get_suggested_data(igdb_data):
             c = 60
             if 'trailer' in v['name'].lower():
                 c = 90
+            if 'http' not in v['video_id']:
+                v['video_id'] = 'https://www.youtube.com/watch?v=' + v['video_id']
             suggestions.append({'Type': 'Video', 'Value': v['video_id'], 'Confidence': c})
     if 'websites' in igdb_data.keys():
         for w in igdb_data['websites']:

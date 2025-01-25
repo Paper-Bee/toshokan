@@ -86,8 +86,32 @@ def store_screenshot(id, file_path, number):
     if not os.path.exists(ss_dir):
         os.mkdir(ss_dir)
     # Expand into a game-specific folder
-    game_ss_dir = os.path.join(ss_dir, id)
+    game_ss_dir = os.path.join(ss_dir, str(id))
     if not os.path.exists(game_ss_dir):
         os.mkdir(game_ss_dir)
     ss_img_path = os.path.join(game_ss_dir, '%s.jpg' % number)
     os.rename(file_path, ss_img_path)
+
+
+def clean_workzone():
+    user_config = config.get_config()
+    workzone_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Workzone')
+    for wz_type in ['Background', 'Cover', 'Screenshot']:
+        subdir = os.path.join(workzone_dir, wz_type)
+        keepdir = os.path.join(subdir, 'Keep')
+        if os.path.exists(subdir):
+            for f in os.listdir(subdir):
+                if str(f) not in ['desktop.ini', 'Keep']:
+                    os.remove(os.path.join(subdir, f))
+            if os.path.exists(keepdir):
+                for f in os.listdir(keepdir):
+                    if str(f) not in ['desktop.ini', 'Keep']:
+                        os.remove(os.path.join(keepdir, f))
+
+
+def clean_temp():
+    user_config = config.get_config()
+    temp_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Temp')
+    for f in os.listdir(temp_dir):
+        if str(f) not in ['desktop.ini']:
+            os.remove(os.path.join(temp_dir, f))
