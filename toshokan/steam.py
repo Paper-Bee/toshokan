@@ -38,6 +38,8 @@ def is_steamid_valid(steamid):
 
 def get_suggested_data(steamdata):
     suggestions = []
+    if len(steamdata) == 0:
+        return suggestions
     if 'name' in steamdata.keys():
         suggestions.append({'Type': 'Name', 'Value': steamdata['name'], 'Confidence': 95})
     if 'short_description' in steamdata.keys():
@@ -65,9 +67,10 @@ def get_suggested_data(steamdata):
     for s in steamdata['screenshots']:
         suggestions.append({'Type': 'Screenshot', 'Value': s['path_full'].split('?')[0], 'Confidence': 100})
     m_count = 0
-    for m in steamdata['movies']:
-        suggestions.append({'Type': 'Video', 'Value': m['webm']['max'].split('?')[0], 'Confidence': 90 - m_count})
-        m_count += 1
+    if 'movies' in steamdata.keys():
+        for m in steamdata['movies']:
+            suggestions.append({'Type': 'Video', 'Value': m['webm']['max'].split('?')[0], 'Confidence': 90 - m_count})
+            m_count += 1
     if steamdata['release_date']['date'][-4:].isnumeric():
         # Steam dates are often inaccurate for re-releases as developers try to make them seem new
         suggestions.append({'Type': 'Year', 'Value': steamdata['release_date']['date'][-4:], 'Confidence': 80})

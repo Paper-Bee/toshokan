@@ -150,7 +150,8 @@ def get_full_game_info(id):
 def get_suggested_data(lbdata):
     suggestions = []
     for g in [x.strip() for x in lbdata['Genres'].split(';')]:
-        suggestions.append({'Type': 'Genre', 'Value': g, 'Confidence': 90})
+        if g != '':
+            suggestions.append({'Type': 'Genre', 'Value': g, 'Confidence': 90})
     if lbdata['Developer'] is not None and len(lbdata['Developer']) > 0:
         suggestions.append({'Type': 'Developer', 'Value': lbdata['Developer'], 'Confidence': 90})
     if lbdata['Publisher'] is not None and len(lbdata['Publisher']) > 0:

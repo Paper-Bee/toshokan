@@ -1,8 +1,9 @@
 import config
 import json
 import os
-from PIL import Image
+from PIL import Image, ImageFile
 import requests
+import time
 import uuid
 
 
@@ -39,23 +40,28 @@ def load_json(id):
     return game_data
 
 
-def download_image(url):
+def download_image(url, bg=False):
     user_config = config.get_config()
     temp_dir = os.path.join(user_config['Toshokan']['storage_path'], 'Temp')
     # Make the temp directory if it does not exist
     if not os.path.exists(temp_dir):
         os.mkdir(temp_dir)
     file_type = url.split('.')[-1]
-    temp_file_name = '%s.temp.%s' % (str(uuid.uuid4()), file_type.lower())
-    temp_file_path = os.path.join(temp_dir, temp_file_name)
-    file_name = '%s.jpg' % (str(uuid.uuid4()), )
-    file_path = os.path.join(temp_dir, file_name)
-    r = requests.get(url)
-    with open(temp_file_path, 'wb') as out_file:
-        out_file.write(r.content)
-    with Image.open(temp_file_path).convert('RGB') as img:
-        img.thumbnail((1000, 1000), Image.LANCZOS)
-        img.save(file_path, quality=90)
+    r = requests.get(url, stream=True)
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+    if bg:
+        file_name = '%s.png' % (str(uuid.uuid4()), )
+        file_path = os.path.join(temp_dir, file_name)
+        with Image.open(r.raw).convert('RGBA') as img:
+            img.thumbnail((1000, 1000), Image.LANCZOS)
+            img.putalpha(25)
+            img.save(file_path)
+    else:
+        file_name = '%s.jpg' % (str(uuid.uuid4()), )
+        file_path = os.path.join(temp_dir, file_name)
+        with Image.open(r.raw).convert('RGB') as img:
+            img.thumbnail((1000, 1000), Image.LANCZOS)
+            img.save(file_path, quality=90)
     return file_path
 
 
@@ -65,7 +71,7 @@ def store_background(id, file_path):
     # Make the backgrounds directory if it does not exist
     if not os.path.exists(bg_dir):
         os.mkdir(bg_dir)
-    bg_img_path = os.path.join(bg_dir, '%s.jpg' % id)
+    bg_img_path = os.path.join(bg_dir, '%s.png' % id)
     os.rename(file_path, bg_img_path)
 
 

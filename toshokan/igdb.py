@@ -59,8 +59,10 @@ def search_for_game(name, regen=False):
     for game in igdb_search:
         g = {}
         earliest_release_year = 9999
+        if 'release_dates' not in game.keys():
+            continue
         for y in game['release_dates']:
-            if int(y['human'][-4:]) < earliest_release_year:
+            if y['human'][-4:].isnumeric() and int(y['human'][-4:]) < earliest_release_year:
                 earliest_release_year = int(y['human'][-4:])
         platform_list = ''
         for i in range(0, len(game['platforms'])):
@@ -90,7 +92,7 @@ def get_suggested_data(igdb_data):
         for c in igdb_data['collections']:
             suggestions.append({'Type': 'Collection', 'Value': c['name'], 'Confidence': 80})
     if 'cover' in igdb_data.keys():
-        suggestions.append({'Type': 'Cover', 'Value': 'https:%s' % igdb_data['cover']['url'], 'Confidence': 80})
+        suggestions.append({'Type': 'Cover', 'Value': 'https:%s' % igdb_data['cover']['url'].replace('t_thumb', 't_cover_big_2x'), 'Confidence': 80})
     if 'franchises' in igdb_data.keys():
         for f in igdb_data['franchises']:
             suggestions.append({'Type': 'Franchise', 'Value': f['name'], 'Confidence': 80})
@@ -119,7 +121,7 @@ def get_suggested_data(igdb_data):
         suggestions.append({'Type': 'Year', 'Value': year, 'Confidence': 80})
     if 'screenshots' in igdb_data.keys():
         for s in igdb_data['screenshots']:
-            suggestions.append({'Type': 'Screenshot', 'Value': 'https:%s' % s['url'], 'Confidence': 80})
+            suggestions.append({'Type': 'Screenshot', 'Value': 'https:%s' % s['url'].replace('t_thumb', 't_1080p'), 'Confidence': 80})
     # TODO: Status
     if 'summary' in igdb_data.keys():
         suggestions.append({'Type': 'Description', 'Value': igdb_data['summary'], 'Confidence': 85})
@@ -130,7 +132,7 @@ def get_suggested_data(igdb_data):
     if 'videos' in igdb_data.keys():
         for v in igdb_data['videos']:
             c = 60
-            if 'trailer' in v['name'].lower():
+            if 'name' in v.keys() and 'trailer' in v['name'].lower():
                 c = 90
             if 'http' not in v['video_id']:
                 v['video_id'] = 'https://www.youtube.com/watch?v=' + v['video_id']

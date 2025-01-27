@@ -96,11 +96,11 @@ def get_suggested_data(ra_data):
     suggestions = []
     suggestions.append({'Type': 'Platform', 'Value': ra_data['ConsoleName'], 'Confidence': 95})
     if '000002.png' not in ra_data['ImageTitle']:
-        suggestions.append({'Type': 'Screenshot', 'Value': ra_data['ImageTitle'], 'Confidence': 71})
+        suggestions.append({'Type': 'Screenshot', 'Value': 'https://media.retroachievements.org' + ra_data['ImageTitle'], 'Confidence': 71})
     if '000002.png' not in ra_data['ImageIngame']:
-        suggestions.append({'Type': 'Screenshot', 'Value': ra_data['ImageIngame'], 'Confidence': 70})
+        suggestions.append({'Type': 'Screenshot', 'Value': 'https://media.retroachievements.org' + ra_data['ImageIngame'], 'Confidence': 70})
     if '000002.png' not in ra_data['ImageBoxArt']:
-        suggestions.append({'Type': 'Cover', 'Value': ra_data['ImageBoxArt'], 'Confidence': 70})
+        suggestions.append({'Type': 'Cover', 'Value': 'https://media.retroachievements.org' + ra_data['ImageBoxArt'], 'Confidence': 70})
     if ra_data['Released'] is not None:
         suggestions.append({'Type': 'Year', 'Value': ra_data['Released'].split('-')[0], 'Confidence': 60})
     return suggestions

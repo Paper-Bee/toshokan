@@ -5,6 +5,8 @@ import requests
 
 def download_data_by_steamid(steamid):
     resp = json.loads(requests.get('https://www.pcgamingwiki.com/w/api.php', params={'action': 'cargoquery', 'tables': 'Infobox_game', 'fields': 'Infobox_game._pageID=PageID,Infobox_game.Steam_AppID', 'where': 'Infobox_game.Steam_AppID HOLDS "%s"' % steamid, 'format': 'json'}).text)
+    if len(resp['cargoquery']) == 0:
+        return None
     pcgw_id = resp['cargoquery'][0]['title']['PageID']
 
     resp = json.loads(requests.get('https://www.pcgamingwiki.com/w/api.php', params={'action': 'parse', 'format': 'json', 'pageid': pcgw_id, 'prop': 'wikitext'}).text)
@@ -44,11 +46,11 @@ def get_suggested_data(pcgw_data):
     # Developers
     developers = re.findall('game/row/developer\\|(.*)}}', pcgw_data)
     for d in developers:
-        suggestions.append({'Type': 'Developer', 'Value': d.strip(), 'Confidence': 95})
+        suggestions.append({'Type': 'Developer', 'Value': d.split('|')[0].strip(), 'Confidence': 95})
     # Publishers
     publishers = re.findall('game/row/publisher\\|(.*)}}', pcgw_data)
     for p in publishers:
-        suggestions.append({'Type': 'Publisher', 'Value': p.strip(), 'Confidence': 95})
+        suggestions.append({'Type': 'Publisher', 'Value': p.split('|')[0].strip(), 'Confidence': 95})
     # Tags
     tags = []
     for tag_category in ['monetization', 'microtransactions', 'modes', 'pacing', 'perspectives', 'controls', 'sports', 'vehicles', 'art styles', 'themes']:
@@ -63,7 +65,8 @@ def get_suggested_data(pcgw_data):
     genres = re.findall('Infobox game/row/taxonomy/genres.*\\|(.*)}}', pcgw_data)
     for raw_genre_list in genres:
         for g in [x.strip() for x in raw_genre_list.split(',')]:
-            suggestions.append({'Type': 'Genre', 'Value': g.strip(), 'Confidence': 75})
+            if g != '':
+                suggestions.append({'Type': 'Genre', 'Value': g.strip(), 'Confidence': 75})
     # Series
     series = re.findall('Infobox game/row/taxonomy/series.*\\|(.*)}}', pcgw_data)
     for raw_series_list in series:
