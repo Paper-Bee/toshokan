@@ -7,8 +7,8 @@ def search_for_game(name):
     search_results = []
     for i in range(0, len(resp)):
         g = {}
-        g['Row'] = resp[i]['title']
         g['ID'] = resp[i]['href'].split('/game/')[-1]
+        g['Row'] = resp[i]['title'] + ' [%s]' % g['ID']
         # Skip playthrough submission pages
         if '/submit/' in resp[i]['href']:
             continue

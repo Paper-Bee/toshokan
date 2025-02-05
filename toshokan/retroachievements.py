@@ -53,6 +53,99 @@ def get_gamename_array():
     return results
 
 
+def has_valid_igdb_platform(igdb_data):
+    valid_platforms = [
+        'Atari 2600',
+        'New Nintendo 3DS',
+        'Arduboy',
+        'Nintendo 3DS',
+        'Wii',
+        'Wii U',
+        'PlayStation Portable',
+        'Nintendo DS',
+        'Nintendo DSi',
+        'Zeebo',
+        'PlayStation 2',
+        'Arcade',
+        'Uzebox',
+        'Game Boy Advance',
+        'Nintendo 64',
+        'WonderSwan Color',
+        'WonderSwan',
+        'Xbox',
+        'Nintendo GameCube',
+        'Pokémon mini',
+        'PlayStation',
+        'Dreamcast',
+        'Game Boy Color',
+        '64DD',
+        'Neo Geo Pocket Color',
+        'Super Nintendo Entertainment System',
+        'Game Boy',
+        'Sega Mega Drive/Genesis',
+        'Neo Geo Pocket',
+        'Super Famicom',
+        'Sega Saturn',
+        'Satellaview',
+        'Virtual Boy',
+        'Atari Jaguar CD',
+        'Neo Geo CD',
+        'Sega CD 32X',
+        'Sega 32X',
+        'FM Towns',
+        'Sega Master System/Mark III',
+        'PC-FX',
+        '3DO Interactive Multiplayer',
+        'Atari Jaguar',
+        'Mega Duck/Cougar Boy',
+        'Amiga',
+        'Sega CD',
+        'Nintendo Entertainment System',
+        'Sega Game Gear',
+        'Watara/QuickShot Supervision',
+        'Atari Lynx',
+        'Turbografx-16/PC Engine CD',
+        'TurboGrafx-16/PC Engine',
+        'Sharp X68000',
+        'PC Engine SuperGrafx',
+        'PC-9800 Series',
+        'Apple IIGS',
+        'Sharp X1',
+        'Commodore C64/128/MAX',
+        'Amstrad CPC',
+        'Atari ST/STE',
+        'Atari 5200',
+        'Atari 7800',
+        'MSX2',
+        'SG-1000',
+        'Vectrex',
+        'MSX',
+        'TRS-80',
+        'ColecoVision',
+        'FM-7',
+        'Intellivision',
+        'ZX Spectrum',
+        'Arcadia 2001',
+        'PC-8800 Series',
+        'DOS',
+        'Sinclair ZX81',
+        'Atari 8-bit',
+        'Odyssey 2 / Videopac G7000',
+        'Elektor TV Games Computer',
+        'Apple II',
+        'VC 4000',
+        'Fairchild Channel F',
+    ]
+    igdb_platforms = [x['name'] for x in igdb_data['platforms']]
+    found_platforms = []
+    for x in igdb_platforms:
+        if x in valid_platforms:
+            found_platforms.append(x)
+    if len(found_platforms) == 0:
+        return False
+    return True
+
+
 def search_for_game(name):
     games = get_gamename_array()
     results = process.extract(name, games, scorer=fuzz.ratio, limit=10)
@@ -62,6 +155,9 @@ def search_for_game(name):
     for r in results:
         g = {}
         g['Title'], g['ID'] = r[0].split('||', 1)
+        # Skip subsets
+        if '[Subset' in g['Title']:
+            continue
         g['ID'] = int(g['ID'])
         g['SearchScore'] = r[1]
         if g['ID'] not in used_ids:
@@ -89,7 +185,7 @@ def expand_search_results(results):
 # Given an ID, fetch more info from RA
 def get_game_info(id):
     user_config = config.get_config()
-    return json.loads(requests.get('https://retroachievements.org/API/API_GetGame.php', params={'y': user_config['RetroAchievements']['api_key'], 'i': id}).text)
+    return json.loads(requests.get('https://retroachievements.org/API/API_GetGameExtended.php', params={'y': user_config['RetroAchievements']['api_key'], 'i': id}).text)
 
 
 def get_suggested_data(ra_data):
@@ -103,4 +199,6 @@ def get_suggested_data(ra_data):
         suggestions.append({'Type': 'Cover', 'Value': 'https://media.retroachievements.org' + ra_data['ImageBoxArt'], 'Confidence': 70})
     if ra_data['Released'] is not None:
         suggestions.append({'Type': 'Year', 'Value': ra_data['Released'].split('-')[0], 'Confidence': 60})
+    if ra_data['NumAchievements'] > 0:
+        suggestions.append({'Type': 'Meta', 'Value': 'RetroAchievements', 'Confidence': 60})
     return suggestions

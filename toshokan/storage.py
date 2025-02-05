@@ -54,7 +54,7 @@ def download_image(url, bg=False):
         file_path = os.path.join(temp_dir, file_name)
         with Image.open(r.raw).convert('RGBA') as img:
             img.thumbnail((1000, 1000), Image.LANCZOS)
-            img.putalpha(25)
+            img.putalpha(30)
             img.save(file_path)
     else:
         file_name = '%s.jpg' % (str(uuid.uuid4()), )

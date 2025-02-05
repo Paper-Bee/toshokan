@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import html
 import json
 import requests
 import storage
@@ -8,7 +9,11 @@ def download_data(steamid):
     resp = requests.get('https://store.steampowered.com/api/appdetails?l=en&appids=%s' % steamid)
     appdetails = json.loads(resp.text)[steamid]
     if appdetails['success']:
-        return appdetails['data']
+        steam_data = appdetails['data']
+        resp = requests.get('https://store.steampowered.com/app/%s/' % steamid)
+        if '<h2>AI Generated Content Disclosure</h2>' in resp.text:
+            steam_data['ai_generated'] = True
+        return steam_data
     else:
         return {}
 
@@ -23,7 +28,7 @@ def search_for_game(name):
             g = {}
             name = game.find('div', 'search_name').find('span', 'title').text.strip()
             release_date = game.find('div', 'search_released').text.strip()
-            g['Row'] = '%s (%s)' % (name, release_date)
+            g['Row'] = '%s (%s) [%s]' % (name, release_date, game['data-ds-appid'])
             g['ID'] = game['data-ds-appid']
             search_results.append(g)
     return search_results[:21]
@@ -41,9 +46,9 @@ def get_suggested_data(steamdata):
     if len(steamdata) == 0:
         return suggestions
     if 'name' in steamdata.keys():
-        suggestions.append({'Type': 'Name', 'Value': steamdata['name'], 'Confidence': 95})
+        suggestions.append({'Type': 'Name', 'Value': steamdata['name'].strip(), 'Confidence': 95})
     if 'short_description' in steamdata.keys():
-        suggestions.append({'Type': 'Description', 'Value': steamdata['short_description'], 'Confidence': 95})
+        suggestions.append({'Type': 'Description', 'Value': html.unescape(steamdata['short_description'].strip()), 'Confidence': 95})
     if 'website' in steamdata.keys():
         suggestions.append({'Type': 'Homepage', 'Value': steamdata['website'], 'Confidence': 100})
     if 'background_raw' in steamdata.keys():
@@ -56,20 +61,28 @@ def get_suggested_data(steamdata):
         suggestions.append({'Type': 'Platform', 'Value': 'Mac', 'Confidence': 100})
     if steamdata['platforms']['linux']:
         suggestions.append({'Type': 'Platform', 'Value': 'Linux', 'Confidence': 100})
-    for d in steamdata['developers']:
-        suggestions.append({'Type': 'Developer', 'Value': d, 'Confidence': 100})
-    for p in steamdata['publishers']:
-        suggestions.append({'Type': 'Publisher', 'Value': p, 'Confidence': 100})
+    if 'developers' in steamdata.keys():
+        for d in steamdata['developers']:
+            suggestions.append({'Type': 'Developer', 'Value': d.strip(), 'Confidence': 100})
+    if 'publishers' in steamdata.keys():
+        for p in steamdata['publishers']:
+            suggestions.append({'Type': 'Publisher', 'Value': p.strip(), 'Confidence': 100})
+    if 'ai_generated' in steamdata.keys():
+        suggestions.append({'Type': 'Meta', 'Value': 'AI-Generated Content', 'Confidence': 100})
     for c in steamdata['categories']:
-        suggestions.append({'Type': 'Meta', 'Value': c['description'], 'Confidence': 100})
-    for g in steamdata['genres']:
-        suggestions.append({'Type': 'Genre', 'Value': g['description'], 'Confidence': 50})
+        suggestions.append({'Type': 'Meta', 'Value': c['description'].strip(), 'Confidence': 100})
+    if 'genres' in steamdata.keys():
+        for g in steamdata['genres']:
+            if g['description'].strip() == 'Early Access':
+                suggestions.append({'Type': 'Meta', 'Value': g['description'].strip(), 'Confidence': 100})
+            else:
+                suggestions.append({'Type': 'Genre', 'Value': g['description'].strip(), 'Confidence': 50})
     for s in steamdata['screenshots']:
         suggestions.append({'Type': 'Screenshot', 'Value': s['path_full'].split('?')[0], 'Confidence': 100})
     m_count = 0
     if 'movies' in steamdata.keys():
         for m in steamdata['movies']:
-            suggestions.append({'Type': 'Video', 'Value': m['webm']['max'].split('?')[0], 'Confidence': 90 - m_count})
+            suggestions.append({'Type': 'Video', 'Value': m['webm']['max'].split('?')[0].replace('http:', 'https:'), 'Confidence': 90 - m_count})
             m_count += 1
     if steamdata['release_date']['date'][-4:].isnumeric():
         # Steam dates are often inaccurate for re-releases as developers try to make them seem new

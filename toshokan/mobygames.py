@@ -7,8 +7,11 @@ import requests
 def get_game_info(game_id):
     user_config = config.get_config()
     resp = requests.get('https://api.mobygames.com/v1/games', params={'id': game_id, 'api_key': user_config['MobyGames']['api_key']})
-    mobygames_details = json.loads(resp.text)['games'][0]
-    return mobygames_details
+    mobygames_details = json.loads(resp.text)
+    if 'games' not in mobygames_details.keys():
+        print(mobygames_details)
+        return {}
+    return mobygames_details['games'][0]
 
 
 def search_for_game(name):
@@ -16,8 +19,8 @@ def search_for_game(name):
     search_results = []
     for i in range(0, len(resp)):
         g = {}
-        g['Row'] = resp[i]['title']
         g['ID'] = resp[i]['href'].split('/game/')[-1].split('/')[0]
+        g['Row'] = resp[i]['title'] + ' [%s]' % g['ID']
         # Skip non-game pages
         if '/game/' not in resp[i]['href']:
             continue
@@ -34,6 +37,8 @@ def search_for_game(name):
 
 def get_suggested_data(mobygames_data):
     suggestions = []
+    if len(mobygames_data.keys()) == 0:
+        return suggestions
     if 'title' in mobygames_data.keys():
         suggestions.append({'Type': 'Name', 'Value': mobygames_data['title'], 'Confidence': 70})
     if 'alternate_titles' in mobygames_data.keys():

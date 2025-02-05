@@ -11,13 +11,16 @@ import pcgamingwiki
 import retroachievements
 import steam
 import storage
+import subprocess
 import time
 import webbrowser
 
 
 def select_from_list(options):
+    if len(options) == 0:
+        return []
     for i in range(0, len(options)):
-        print('%s. %s' % (i, options[i]['Row']))
+        print('%s. \033[1m%s' % (i, options[i]['Row'].replace(' [', '\033[0;0m [', 1)))
         if 'Type' in options[i].keys() and options[i]['Type'] == 'Description':
             print('------------------------------------------------------------------------------------------')
     print()
@@ -29,9 +32,11 @@ def select_from_list(options):
 
 
 def exclude_from_list(options):
+    if len(options) == 0:
+        return []
     valid_numbers = list(range(0, len(options)))
     for i in valid_numbers:
-        print('%s. %s' % (i, options[i]['Row']))
+        print('%s. \033[1m%s' % (i, options[i]['Row'].replace(' [', '\033[0;0m [')))
         if 'Type' in options[i].keys() and options[i]['Type'] == 'Description':
             print('------------------------------------------------------------------------------------------')
     print()
@@ -47,13 +52,12 @@ def prompt_for_external_id():
     external_id = input("External ID: ")
     if external_id.isnumeric():
         external_id = int(external_id)
-    else:
-        external_id = user_config['Toshokan']['highest_seen_external_id'] + 1
-    # Update the highest seen external ID if it's larger than the previous
-    if external_id > user_config['Toshokan']['highest_seen_external_id']:
-        user_config = config.set_option(user_config, 'Toshokan', 'highest_seen_external_id', external_id)
-        config.save_config(user_config)
-    return external_id
+        # Update the highest seen external ID if it's larger than the previous
+        if external_id > user_config['Toshokan']['highest_seen_external_id']:
+            user_config = config.set_option(user_config, 'Toshokan', 'highest_seen_external_id', external_id)
+            config.save_config(user_config)
+        return external_id
+    return None
 
 
 def choose_images(category, url_objects):
@@ -96,18 +100,26 @@ def choose_images(category, url_objects):
             images_found = True
     if not images_found:
         return []
-    # Open folder
-    webbrowser.open('file:///' + str(work_dir))
-    # Wait for final selection
-    while True:
-        wait = False
+    if category == 'Screenshot' and user_config['Toshokan']['prefer_steam_data'] and len(url_objects) == 4 and url_objects[-1]['Source'] == 'Steam':
         for f in os.listdir(work_dir):
             if f.endswith('.jpg') or f.endswith('.png'):
-                wait = True
-        if wait:
-            time.sleep(0.5)
-        else:
-            break
+                # Move images
+                os.rename(os.path.join(work_dir, f), os.path.join(keep_dir, f))
+    else:
+        # Open folder
+        webbrowser.open('file:///' + str(work_dir))
+        # Wait for final selection
+        while True:
+            wait = False
+            for f in os.listdir(work_dir):
+                if f.endswith('.jpg') or f.endswith('.png'):
+                    wait = True
+            if wait:
+                time.sleep(0.5)
+            else:
+                break
+    if user_config['Toshokan']['use_nircmd']:
+        subprocess.run([user_config['Toshokan']['nircmd_path'], 'win', 'close', 'title', category])
     selected_files = []
     selected_files_raw = os.listdir(keep_dir)
     if len(selected_files_raw) > 0:
@@ -121,12 +133,16 @@ def choose_images(category, url_objects):
     return selected_files
 
 
-def collect_data(g):
+def collect_data(g, user_input=None, external_id=None, name_override=None):
     user_config = config.get_config()
-    user_input = input("Please input a game name or Steam URL: ").strip()
+    if user_input is None:
+        user_input = input("Please input a game name or Steam URL: ").strip()
 
     if user_config['Toshokan']['use_external_id']:
-        g['External ID'] = prompt_for_external_id()
+        if external_id is None:
+            g['External ID'] = prompt_for_external_id()
+        else:
+            g['External ID'] = int(external_id)
 
     # Handle Steam
     steam_appid = None
@@ -141,10 +157,17 @@ def collect_data(g):
                 steam_appid = chosen[0]['ID']
         if steam_appid is not None:
             steam_data = steam.download_data(steam_appid)
-            if 'name' not in steam_data.keys():
-                user_input = input("Delisted, please input name: ").strip()
+            if name_override is not None:
+                user_input = name_override
             else:
-                user_input = steam_data['name']
+                if 'name' not in steam_data.keys():
+                    user_input = input("Delisted, please input name: ").strip()
+                else:
+                    user_input = steam_data['name']
+                    print("Found name \033[1m%s\033[0;0m on Steam, press Enter to use, or type new name:" % (steam_data['name'], ))
+                    steam_input2 = input()
+                    if steam_input2.strip() != '':
+                        user_input = steam_input2
             steam_suggestions = steam.get_suggested_data(steam_data)
             if len(steam_data.keys()) == 0:
                 g['External Links']['Steam']['Is Delisted'] = True
@@ -171,20 +194,31 @@ def collect_data(g):
                 g['External Links']['PCGamingWiki']['ID'] = chosen[0]['Row']
         # Get suggestions if we have data
         if pcgw_data is not None:
-            pcgamingwiki_suggestions = pcgamingwiki.get_suggested_data(pcgw_data['Data'])
+            pcgamingwiki_suggestions = pcgamingwiki.get_suggested_data(pcgw_data['Data'], exclude_developers=user_config['PCGamingWiki']['exclude_developers'], exclude_publishers=user_config['PCGamingWiki']['exclude_publishers'])
             g['External Suggestions']['PCGamingWiki'] = pcgamingwiki_suggestions
 
     # Handle IGDB
     if user_config['IGDB']['enabled']:
         # TODO: Use ID from PCGamingWiki if valid
         print("\nSearching on IGDB...")
-        igdb_search_results = igdb.search_for_game(user_input)
-        chosen = select_from_list(igdb_search_results)
+        igdb_found = False
+        chosen = []
+        if steam_appid is not None:
+            print("Trying Steam app ID...")
+            igdb_search_results = igdb.search_for_game_by_steam_appid(steam_appid)
+            if len(igdb_search_results) == 1:
+                chosen = igdb_search_results
+                print("Found %s" % chosen[0]['Row'])
+                igdb_found = True
+        elif not igdb_found:
+            igdb_search_results = igdb.search_for_game(user_input)
+            chosen = select_from_list(igdb_search_results)
         if len(chosen) != 0:
             igdb_data = igdb.get_full_game_info(chosen[0]['ID'])
             igdb_suggestions = igdb.get_suggested_data(igdb_data)
             g['External Links']['IGDB']['ID'] = chosen[0]['ID']
             g['External Suggestions']['IGDB'] = igdb_suggestions
+            igdb_found = True
 
     # Handle LaunchBox
     if user_config['LaunchBox']['enabled']:
@@ -211,6 +245,7 @@ def collect_data(g):
             g['External Links']['GameFAQs']['URL'] = chosen[0]['URL']
 
     # Handle HowLongToBeat
+    hl2b_found = False
     if user_config['HowLongToBeat']['enabled']:
         # Use ID from PCGamingWiki if valid
         if user_config['PCGamingWiki']['enabled'] and pcgw_data is not None:
@@ -218,7 +253,8 @@ def collect_data(g):
                 if v['Type'] == 'HowLongToBeat ID':
                     print("\nUsing HowLongToBeat ID from PCGamingWiki...")
                     g['External Links']['HowLongToBeat']['ID'] = v['Value']
-        else:
+                    hl2b_found = True
+        if not hl2b_found and user_config['HowLongToBeat']['search_if_not_found']:
             try:
                 print("\nSearching on HowLongToBeat...")
                 hltb_search_results = howlongtobeat.search_for_game(user_input)
@@ -231,29 +267,35 @@ def collect_data(g):
     # Handle RetroAchievements
     if user_config['RetroAchievements']['enabled']:
         print("\nSearching on RetroAchievements...")
-        retroachievements_search_results = retroachievements.search_for_game(user_input)
-        chosen = select_from_list(retroachievements_search_results)
-        if len(chosen) != 0:
-            g['External Suggestions']['RetroAchievements'] = {}
-            g['External Links']['RetroAchievements'] = {}
-            for c in chosen:
-                retroachievements_data = retroachievements.get_game_info(c['ID'])
-                retroachievements_suggestions = retroachievements.get_suggested_data(retroachievements_data)
-                platform = retroachievements_data['ConsoleName']
-                g['External Links']['RetroAchievements'][platform] = {}
-                g['External Links']['RetroAchievements'][platform]['ID'] = c['ID']
-                g['External Suggestions']['RetroAchievements'][platform] = retroachievements_suggestions
+        if igdb_found and retroachievements.has_valid_igdb_platform(igdb_data):
+            retroachievements_search_results = retroachievements.search_for_game(user_input)
+            chosen = select_from_list(retroachievements_search_results)
+            if len(chosen) != 0:
+                g['External Suggestions']['RetroAchievements'] = {}
+                g['External Links']['RetroAchievements'] = {}
+                for c in chosen:
+                    retroachievements_data = retroachievements.get_game_info(c['ID'])
+                    retroachievements_suggestions = retroachievements.get_suggested_data(retroachievements_data)
+                    platform = retroachievements_data['ConsoleName']
+                    g['External Links']['RetroAchievements'][platform] = {}
+                    g['External Links']['RetroAchievements'][platform]['ID'] = c['ID']
+                    g['External Suggestions']['RetroAchievements'][platform] = retroachievements_suggestions
 
     # Handle MobyGames
+    mobygames_found = False
     if user_config['MobyGames']['enabled']:
         # Use ID from PCGamingWiki if valid
         if user_config['PCGamingWiki']['enabled'] and pcgw_data is not None:
             for v in g['External Suggestions']['PCGamingWiki']:
                 if v['Type'] == 'MobyGames ID':
                     print("\nUsing MobyGames ID from PCGamingWiki...")
+                    mobygames_data = mobygames.get_game_info(v['Value'])
+                    mobygames_suggestions = mobygames.get_suggested_data(mobygames_data)
                     g['External Links']['MobyGames']['ID'] = v['Value']
+                    g['External Suggestions']['MobyGames'] = mobygames_suggestions
                     webbrowser.open('https://www.mobygames.com/game/%s' % (v['Value'], ))
-        else:
+                    mobygames_found = True
+        if not mobygames_found and user_config['MobyGames']['search_if_not_found']:
             try:
                 print("\nSearching on MobyGames...")
                 mobygames_search_results = mobygames.search_for_game(user_input)
@@ -303,7 +345,8 @@ def consolidate_type(game_data, attribute, cased=False):
     return sorted(candidate_objects, key=itemgetter('Confidence'), reverse=True)
 
 
-def refine_data(game_data):
+def refine_data(game_data, video_override=None):
+    user_config = config.get_config()
     print("\nFiltering aliases...")
     alias_candidate_objects = consolidate_type(game_data, 'Alias')
     aliases = exclude_from_list(alias_candidate_objects)
@@ -331,18 +374,32 @@ def refine_data(game_data):
 
     print("\nFiltering developers...")
     dev_candidate_objects = consolidate_type(game_data, 'Developer')
-    devs = exclude_from_list(dev_candidate_objects)
+    steam_preferred = []
+    if user_config['Toshokan']['prefer_steam_data']:
+        for dev in dev_candidate_objects:
+            if dev['Source'] == 'Steam':
+                steam_preferred.append(dev)
+    if len(steam_preferred) > 0:
+        devs = steam_preferred
+    else:
+        devs = exclude_from_list(dev_candidate_objects)
     game_data['Developers'] = [x['Value'] for x in devs]
 
     print("\nFiltering franchises...")
-    dev_candidate_objects = consolidate_type(game_data, 'Franchise')
-    devs = exclude_from_list(dev_candidate_objects)
-    game_data['Franchises'] = [x['Value'] for x in devs]
+    franchise_candidate_objects = consolidate_type(game_data, 'Franchise')
+    franchises = exclude_from_list(franchise_candidate_objects)
+    game_data['Franchises'] = [x['Value'] for x in franchises]
+
+    print("\nWould you like to add any custom franchises? If so, input them, separated by commas, now:")
+    user_franchises = input().split(',')
+    if user_franchises[0] != '':
+        game_data['Franchises'] += user_franchises
 
     print("\nFiltering genres...")
-    genre_candidate_objects = consolidate_type(game_data, 'Genre')
-    genres = exclude_from_list(genre_candidate_objects)
-    game_data['Genres'] = [x['Value'] for x in genres]
+    if not user_config['Toshokan']['skip_genres']:
+        genre_candidate_objects = consolidate_type(game_data, 'Genre')
+        genres = exclude_from_list(genre_candidate_objects)
+        game_data['Genres'] = [x['Value'] for x in genres]
 
     print("\nFiltering meta attributes...")
     meta_candidate_objects = consolidate_type(game_data, 'Meta')
@@ -351,12 +408,17 @@ def refine_data(game_data):
 
     print("\nFiltering names...")
     name_candidate_objects = consolidate_type(game_data, 'Name', cased=True)
-    if len(name_candidate_objects) == 1:
-        names = name_candidate_objects
-    else:
-        names = select_from_list(name_candidate_objects)
+    names = []
+    while len(names) != 1:
+        if len(name_candidate_objects) == 1:
+            names = name_candidate_objects
+        else:
+            names = select_from_list(name_candidate_objects)
     if len(names) == 1:
         game_data['Name'] = names[0]['Value']
+    for a in name_candidate_objects:
+        if a['Value'] != game_data['Name']:
+            game_data['Aliases'].append(a['Value'])
 
     print("\nFiltering platforms...")
     platform_objects = consolidate_type(game_data, 'Platform')
@@ -365,11 +427,28 @@ def refine_data(game_data):
 
     print("\nFiltering publishers...")
     pub_candidate_objects = consolidate_type(game_data, 'Publisher')
-    pubs = exclude_from_list(pub_candidate_objects)
+    steam_preferred = []
+    if user_config['Toshokan']['prefer_steam_data']:
+        for pub in pub_candidate_objects:
+            if pub['Source'] == 'Steam':
+                steam_preferred.append(pub)
+    if len(steam_preferred) > 0:
+        pubs = steam_preferred
+    else:
+        pubs = exclude_from_list(pub_candidate_objects)
     game_data['Publishers'] = [x['Value'] for x in pubs]
 
     print("\nSelecting screenshots...")
     ss_candidate_objects = consolidate_type(game_data, 'Screenshot')
+    steam_preferred = []
+    if user_config['Toshokan']['prefer_steam_data']:
+        for ss in ss_candidate_objects:
+            if ss['Source'] == 'Steam':
+                steam_preferred.append(ss)
+            if len(steam_preferred) == 4:
+                break
+    if len(steam_preferred) == 4:
+        ss_candidate_objects = steam_preferred
     chosen_screenshots = choose_images('Screenshot', ss_candidate_objects)
     for i in range(0, len(chosen_screenshots)):
         game_data['Screenshot URLs'].append(chosen_screenshots[i]['URL'])
@@ -393,10 +472,16 @@ def refine_data(game_data):
 
     print("\nFiltering videos...")
     video_candidate_objects = consolidate_type(game_data, 'Video')
+    if len(video_candidate_objects) > 0 and user_config['Toshokan']['default_to_steam_video']:
+        if video_candidate_objects[0]['Source'] == 'Steam':
+            video_candidate_objects = [video_candidate_objects[0]]
     if len(video_candidate_objects) == 1:
         videos = video_candidate_objects
     else:
-        videos = select_from_list(video_candidate_objects)
+        if video_override is not None:
+            videos = [{'Value': video_override}]
+        else:
+            videos = select_from_list(video_candidate_objects)
     if len(videos) == 1:
         if 'steamstatic' in videos[0]['Value']:
             game_data['Video URL'] = videos[0]['Value'].split('?')[0]
@@ -438,12 +523,12 @@ def refine_data(game_data):
     return game_data
 
 
-def add_new_game():
+def add_new_game(user_input=None, external_id=None, name_override=None, video_override=None):
     g = game.new_game()
     id = storage.get_new_json_id()
     g['ID'] = id
-    g = collect_data(g)
-    g = refine_data(g)
+    g = collect_data(g, user_input=user_input, external_id=external_id, name_override=name_override)
+    g = refine_data(g, video_override=video_override)
     storage.store_json(g)
     storage.clean_workzone()
     storage.clean_temp()

@@ -12,6 +12,8 @@ def get_base_options():
         },
         "HowLongToBeat": {
             "enabled": False,
+            # Use a search engine if not found externally
+            "search_if_not_found": False,
         },
         "IGDB": {
             # Access token is automatically obtained/updated
@@ -31,9 +33,15 @@ def get_base_options():
         "MobyGames": {
             "api_key": "",
             "enabled": False,
+            # Use a search engine if not found externally
+            "search_if_not_found": False,
         },
         "PCGamingWiki": {
             "enabled": False,
+            # Developers and publishers seem to often be inaccurate here,
+            # so users should be able to disable them all together.
+            "exclude_developers": False,
+            "exclude_publishers": False,
         },
         "RetroAchievements": {
             "api_key": "",
@@ -43,17 +51,29 @@ def get_base_options():
             "enabled": False,
         },
         "Toshokan": {
+            # When adding a game, if a Steam video is available,
+            # use that rather than prompting
+            "default_to_steam_video": False,
             # If use_external_id is true and you don't input one when prompted,
             # it will instead use this value + 1. Automatically updated when you
             # input an external ID.
             "highest_seen_external_id": 0,
+            # The path to (and including) nircmd.exe, if use_nircmd is enabled
+            "nircmd_path": "",
+            # Use just Steam developer/publisher and screenshots when available
+            "prefer_steam_data": False,
             # The maximum number of screenshots to store when building an entry
             "screenshots": 4,
+            # Skip genre information when creating a game entry. Not recommended.
+            "skip_genres": False,
             # The directory that Toshokan should store harvested data in.
             "storage_path": "",
             # Whether or not you want to store a external ID for syncing external entries.
             # If you don't already have a database from another program, you don't need this.
             "use_external_id": False,
+            # Windows Only: Automatically close background/cover/screenshot working directory
+            # windows once images are chosen
+            "use_nircmd": False,
         }
     }
 

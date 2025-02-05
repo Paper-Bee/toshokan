@@ -99,8 +99,7 @@ def get_gamename_array():
 
 def search_for_game(name):
     games = get_gamename_array()
-    results = process.extract(name, games, scorer=fuzz.ratio, limit=10)
-    results += process.extract(name, games, scorer=fuzz.partial_ratio, limit=10)
+    results = process.extract(name, games, scorer=fuzz.partial_ratio, limit=20)
     final_results = []
     used_gids = []
     for r in results:
@@ -149,6 +148,7 @@ def get_full_game_info(id):
 
 def get_suggested_data(lbdata):
     suggestions = []
+    suggestions.append({'Type': 'Name', 'Value': lbdata['Name'].strip(), 'Confidence': 90})
     for g in [x.strip() for x in lbdata['Genres'].split(';')]:
         if g != '':
             suggestions.append({'Type': 'Genre', 'Value': g, 'Confidence': 90})
@@ -192,8 +192,8 @@ def get_suggested_data(lbdata):
         if i['Type'] == 'Screenshot - Gameplay':
             suggestions.append({'Type': 'Screenshot', 'Value': i['URL'], 'Confidence': 80})
         # Banners have potential as backgrounds
-        if i['Type'] == 'Banner':
-            suggestions.append({'Type': 'Background', 'Value': i['URL'], 'Confidence': 50})
+        '''if i['Type'] == 'Banner':
+            suggestions.append({'Type': 'Background', 'Value': i['URL'], 'Confidence': 50})'''
         # Deprioritize fan art backgrounds, but keep it in case there's nothing else
         if i['Type'] == 'Fanart - Background':
             suggestions.append({'Type': 'Background', 'Value': i['URL'], 'Confidence': 25})

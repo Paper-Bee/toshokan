@@ -75,6 +75,30 @@ def search_for_game(name, regen=False):
         search_results.append(g)
     return search_results[:21]
 
+def search_for_game_by_steam_appid(appid, regen=False):
+    client_id, access_token = get_access_details(regen=regen)
+    resp = requests.post('https://api.igdb.com/v4/external_games', **{'headers': {'Client-ID': client_id, 'Authorization': 'Bearer %s' % access_token}, 'data': 'fields category, game, game.name, game.release_dates.human, game.platforms.name, uid, year; where category = 1 & uid = "%s";' % appid})
+    igdb_search = json.loads(resp.text)
+    search_results = []
+    for game in igdb_search:
+        g = {}
+        earliest_release_year = 9999
+        if 'game' not in game.keys():
+            continue
+        for y in game['game']['release_dates']:
+            if y['human'][-4:].isnumeric() and int(y['human'][-4:]) < earliest_release_year:
+                earliest_release_year = int(y['human'][-4:])
+        platform_list = ''
+        for i in range(0, len(game['game']['platforms'])):
+            if i == 0:
+                platform_list += game['game']['platforms'][i]['name']
+            else:
+                platform_list += ", " + game['game']['platforms'][i]['name']
+        g['Row'] = '%s (%s) [%s]' % (game['game']['name'], earliest_release_year, platform_list)
+        g['ID'] = game['game']['id']
+        search_results.append(g)
+    return search_results[:21]
+
 
 def get_suggested_data(igdb_data):
     suggestions = []
@@ -116,7 +140,7 @@ def get_suggested_data(igdb_data):
     if 'release_dates' in igdb_data.keys():
         year = 2999
         for r in igdb_data['release_dates']:
-            if r['y'] < year:
+            if 'y' in r.keys() and r['y'] < year:
                 year = r['y']
         suggestions.append({'Type': 'Year', 'Value': year, 'Confidence': 80})
     if 'screenshots' in igdb_data.keys():

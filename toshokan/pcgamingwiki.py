@@ -30,27 +30,29 @@ def search_for_game(name):
     search_results = []
     for i in range(0, len(titles)):
         g = {}
-        g['Row'] = titles[i]
+        g['Row'] = titles[i] + ' []'
         g['URL'] = links[i]
         search_results.append(g)
     return search_results[:21]
 
 
-def get_suggested_data(pcgw_data):
+def get_suggested_data(pcgw_data, exclude_developers=False, exclude_publishers=False):
     suggestions = []
 
     # Game Name
     name = re.findall('\\|title *= (.*)\\n', pcgw_data)
-    if len(name) == 1:
+    if len(name) == 1 and '|' not in name[0]:
         suggestions.append({'Type': 'Name', 'Value': name[0].strip(), 'Confidence': 95})
     # Developers
-    developers = re.findall('game/row/developer\\|(.*)}}', pcgw_data)
-    for d in developers:
-        suggestions.append({'Type': 'Developer', 'Value': d.split('|')[0].strip(), 'Confidence': 95})
+    if not exclude_developers:
+        developers = re.findall('game/row/developer\\|(.*)}}', pcgw_data)
+        for d in developers:
+            suggestions.append({'Type': 'Developer', 'Value': d.split('|')[0].strip(), 'Confidence': 95})
     # Publishers
-    publishers = re.findall('game/row/publisher\\|(.*)}}', pcgw_data)
-    for p in publishers:
-        suggestions.append({'Type': 'Publisher', 'Value': p.split('|')[0].strip(), 'Confidence': 95})
+    if not exclude_publishers:
+        publishers = re.findall('game/row/publisher\\|(.*)}}', pcgw_data)
+        for p in publishers:
+            suggestions.append({'Type': 'Publisher', 'Value': p.split('|')[0].strip(), 'Confidence': 95})
     # Tags
     tags = []
     for tag_category in ['monetization', 'microtransactions', 'modes', 'pacing', 'perspectives', 'controls', 'sports', 'vehicles', 'art styles', 'themes']:
